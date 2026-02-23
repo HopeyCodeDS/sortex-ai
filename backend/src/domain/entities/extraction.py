@@ -20,7 +20,7 @@ class Extraction:
         extraction_method: ExtractionMethod,
         structured_data: Dict[str, Any],
         raw_text: Optional[str] = None,
-        confidence_scores: Optional[Dict[str, float]] = None,
+        confidence_scores: Optional[Dict[str, Any]] = None,
         extraction_metadata: Optional[Dict[str, Any]] = None,
         extracted_at: Optional[datetime] = None,
         created_at: Optional[datetime] = None,
@@ -37,12 +37,18 @@ class Extraction:
     
     def get_field_confidence(self, field_name: str) -> float:
         """Get confidence score for a specific field"""
-        return self.confidence_scores.get(field_name, 0.0)
-    
+        val = self.confidence_scores.get(field_name, 0.0)
+        if isinstance(val, (int, float)):
+            return float(val)
+        return 0.0
+
     def get_average_confidence(self) -> float:
         """Get average confidence score across all fields"""
         if not self.confidence_scores:
             return 0.0
-        scores = list(self.confidence_scores.values())
+        scores = [
+            float(v) for v in self.confidence_scores.values()
+            if isinstance(v, (int, float))
+        ]
         return sum(scores) / len(scores) if scores else 0.0
 

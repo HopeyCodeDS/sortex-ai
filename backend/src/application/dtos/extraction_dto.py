@@ -12,7 +12,7 @@ class ExtractionDTO(BaseModel):
     extraction_method: ExtractionMethod
     raw_text: Optional[str]
     structured_data: Dict[str, Any]
-    confidence_scores: Dict[str, float]
+    confidence_scores: Dict[str, Any]
     extracted_at: datetime
     extraction_metadata: Dict[str, Any]
     

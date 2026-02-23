@@ -6,7 +6,7 @@ export interface Extraction {
   extraction_method: string;
   raw_text?: string;
   structured_data: Record<string, unknown>;
-  confidence_scores: Record<string, number>;
+  confidence_scores: Record<string, unknown>;
   extracted_at: string;
   extraction_metadata?: Record<string, unknown>;
 }
