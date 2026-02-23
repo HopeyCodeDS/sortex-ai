@@ -27,6 +27,16 @@ import { Skeleton } from '../components/ui/Skeleton';
 
 const PIPELINE_STAGES = ['UPLOADED', 'PROCESSING', 'EXTRACTED', 'VALIDATED', 'REVIEWED', 'EXPORTED', 'FAILED'] as const;
 
+/** Format a structured_data value for display in a text input. */
+function formatFieldValue(value: unknown): string {
+  if (value === null || value === undefined) return '';
+  if (typeof value === 'string') return value;
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+  if (Array.isArray(value)) return JSON.stringify(value);
+  if (typeof value === 'object') return JSON.stringify(value);
+  return String(value);
+}
+
 const MetadataGrid: React.FC<{ metadata: Record<string, unknown> }> = ({ metadata }) => {
   const meta = metadata as Record<string, any>;
   const confidence = meta.classification_confidence;
@@ -376,21 +386,56 @@ const DocumentReview: React.FC = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               {Object.entries(extraction.structured_data || {}).map(([field, value]) => {
-                const confidence = extraction.confidence_scores[field] || 0;
+                const rawConf = extraction.confidence_scores[field];
+                const confidence = typeof rawConf === 'number' ? rawConf : 0;
+                const displayValue = corrections[field] || formatFieldValue(value);
                 return (
-                  <div key={field} className="space-y-2">
+                  <div key={field} className={`space-y-2 ${Array.isArray(value) ? 'md:col-span-2' : ''}`}>
                     <label className="block text-sm font-medium text-slate-700">
-                      {field.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
+                      {field.replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase())}
                     </label>
-                    <input
-                      type="text"
-                      value={corrections[field] || (value as string) || ''}
-                      onChange={(e) => setCorrection(field, e.target.value)}
-                      disabled={isApproved}
-                      className={`block w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 ${
-                        isApproved ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
-                      }`}
-                    />
+                    {Array.isArray(value) ? (
+                      <div className="overflow-x-auto rounded-lg border border-slate-300">
+                        <table className="min-w-full text-sm">
+                          <thead className="bg-slate-50">
+                            <tr>
+                              {value.length > 0 && typeof value[0] === 'object' && value[0] !== null
+                                ? Object.keys(value[0]).map((col) => (
+                                    <th key={col} className="px-3 py-2 text-left font-medium text-slate-600 border-b border-slate-200">
+                                      {col.replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase())}
+                                    </th>
+                                  ))
+                                : <th className="px-3 py-2 text-left font-medium text-slate-600 border-b border-slate-200">Value</th>
+                              }
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {value.map((row, idx) => (
+                              <tr key={idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'}>
+                                {typeof row === 'object' && row !== null
+                                  ? Object.values(row).map((cell, ci) => (
+                                      <td key={ci} className="px-3 py-2 text-slate-900 border-b border-slate-100">
+                                        {String(cell ?? '')}
+                                      </td>
+                                    ))
+                                  : <td className="px-3 py-2 text-slate-900 border-b border-slate-100">{String(row)}</td>
+                                }
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : (
+                      <input
+                        type="text"
+                        value={displayValue}
+                        onChange={(e) => setCorrection(field, e.target.value)}
+                        disabled={isApproved}
+                        className={`block w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 ${
+                          isApproved ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
+                        }`}
+                      />
+                    )}
                     <ConfidenceBar confidence={confidence} />
                   </div>
                 );
