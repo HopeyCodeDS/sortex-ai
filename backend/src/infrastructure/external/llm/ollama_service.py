@@ -1,6 +1,6 @@
 import json
 import logging
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 import httpx
 
 from .base import LLMService, LLMExtractionResult
@@ -32,10 +32,11 @@ class OllamaService(LLMService):
         except Exception as e:
             logger.warning("Failed to pre-load Ollama model '%s': %s", self.model, e)
 
-    def extract_fields(self, text: str, document_type: str, schema: Dict[str, Any]) -> LLMExtractionResult:
+    def extract_fields(self, text: str, document_type: str, schema: Dict[str, Any],
+                       layout_context: Optional[str] = None) -> LLMExtractionResult:
         """Extract structured fields using Ollama"""
         self._ensure_model_loaded()
-        prompt = self._build_prompt(text, document_type, schema)
+        prompt = self._build_prompt(text, document_type, schema, layout_context)
 
         try:
             with httpx.Client(timeout=180.0) as client:
@@ -113,15 +114,24 @@ class OllamaService(LLMService):
             metadata=metadata
         )
     
-    def _build_prompt(self, text: str, document_type: str, schema: Dict[str, Any]) -> str:
+    def _build_prompt(self, text: str, document_type: str, schema: Dict[str, Any],
+                      layout_context: Optional[str] = None) -> str:
         """Build extraction prompt"""
         schema_str = json.dumps(schema, indent=2)
         fields_list = ", ".join(schema.get("properties", {}).keys())
-        
+
+        if layout_context:
+            document_section = f"""Document (layout-aware):
+{layout_context}"""
+            layout_hint = "\n4. Key-value pairs like 'Field: Value' directly map to fields. Table rows map to line-item arrays."
+        else:
+            document_section = f"""Document Text:
+{text[:4000]}"""
+            layout_hint = ""
+
         return f"""You are a document extraction assistant. Extract structured data from the following {document_type} document.
 
-Document Text:
-{text[:4000]}
+{document_section}
 
 Required Fields to Extract:
 {fields_list}
@@ -144,7 +154,7 @@ Instructions:
     "field2": 0.90,
     ...
   }}
-}}
+}}{layout_hint}
 
 Return ONLY valid JSON, no other text. Start with {{ and end with }}.
 

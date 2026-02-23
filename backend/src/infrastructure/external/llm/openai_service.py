@@ -1,5 +1,5 @@
 import json
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 from openai import OpenAI
 
 from .base import LLMService, LLMExtractionResult
@@ -12,9 +12,10 @@ class OpenAIService(LLMService):
         self.client = OpenAI(api_key=api_key)
         self.model = model
     
-    def extract_fields(self, text: str, document_type: str, schema: Dict[str, Any]) -> LLMExtractionResult:
+    def extract_fields(self, text: str, document_type: str, schema: Dict[str, Any],
+                       layout_context: Optional[str] = None) -> LLMExtractionResult:
         """Extract structured fields using OpenAI"""
-        prompt = self._build_prompt(text, document_type, schema)
+        prompt = self._build_prompt(text, document_type, schema, layout_context)
         
         try:
             response = self.client.chat.completions.create(
@@ -52,13 +53,23 @@ class OpenAIService(LLMService):
         except Exception as e:
             raise ValueError(f"OpenAI API error: {str(e)}")
     
-    def _build_prompt(self, text: str, document_type: str, schema: Dict[str, Any]) -> str:
+    def _build_prompt(self, text: str, document_type: str, schema: Dict[str, Any],
+                      layout_context: Optional[str] = None) -> str:
         """Build extraction prompt"""
         schema_str = json.dumps(schema, indent=2)
+
+        if layout_context:
+            document_section = f"""Document (layout-aware):
+{layout_context}"""
+            layout_hint = "\nKey-value pairs like 'Field: Value' directly map to fields. Table rows map to line-item arrays."
+        else:
+            document_section = f"""Document Text:
+{text[:4000]}"""
+            layout_hint = ""
+
         return f"""Extract structured data from the following {document_type} document text.
 
-Document Text:
-{text[:4000]}  # Limit text length
+{document_section}
 
 Expected Schema:
 {schema_str}
@@ -67,5 +78,5 @@ Return a JSON object with:
 - "data": Object containing extracted fields matching the schema
 - "confidence": Object with confidence scores (0.0-1.0) for each field
 
-For missing fields, use null. For confidence, estimate based on clarity of the information in the text."""
+For missing fields, use null. For confidence, estimate based on clarity of the information in the text.{layout_hint}"""
 
