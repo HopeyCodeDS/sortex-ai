@@ -4,6 +4,7 @@ from fastapi.responses import JSONResponse
 import os
 
 from .routes import auth, documents, extractions, validations, reviews, exports
+from .routes import health as health_router
 from ..infrastructure.monitoring.logging import get_logger
 
 logger = get_logger("sortex.api")
@@ -39,9 +40,7 @@ async def root():
     return {"message": "Sortex AI API", "version": "1.0.0"}
 
 
-@app.get("/health")
-async def health():
-    return {"status": "healthy"}
+app.include_router(health_router.router, tags=["health"])
 
 
 @app.exception_handler(Exception)
