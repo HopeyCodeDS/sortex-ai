@@ -13,7 +13,7 @@ import pytest
 
 # ---- Stub the dependencies module that health.py imports from ----
 _deps_stub = ModuleType("src.api.dependencies")
-_deps_stub.get_database = MagicMock()  # type: ignore[attr-defined]
+_deps_stub.get_database = MagicMock()  
 sys.modules.setdefault("src.api.dependencies", _deps_stub)
 
 # Now the import chain from health.py -> dependencies is satisfied
