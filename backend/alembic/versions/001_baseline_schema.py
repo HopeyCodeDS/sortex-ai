@@ -123,10 +123,10 @@ def upgrade() -> None:
     op.create_index("idx_exports_document_id", "exports", ["document_id"])
     op.create_index("idx_exports_status", "exports", ["export_status"])
 
-    # Default admin user
+    # Default admin user (password: admin123 - bcrypt)
     op.execute(
         "INSERT INTO users (email, password_hash, role) "
-        "VALUES ('admin@sortex.ai', '$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW', 'admin') "
+        "VALUES ('admin@sortex.ai', '$2b$12$E2RXvif2fug6G9jVhDevHu78b8OIAB8KXstiPqKcFEprsSdk0.oSO', 'admin') "
         "ON CONFLICT (email) DO NOTHING"
     )
 
