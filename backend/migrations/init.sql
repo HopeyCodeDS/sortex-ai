@@ -102,9 +102,8 @@ CREATE INDEX IF NOT EXISTS idx_exports_document_id ON exports(document_id);
 CREATE INDEX IF NOT EXISTS idx_exports_status ON exports(export_status);
 
 -- Insert default admin user (password: admin123 - to be changed in production!)
--- Password hash for 'admin123' using bcrypt
--- Note: In production, I'll need to generate a proper hash using: python -c "from passlib.context import CryptContext; pwd_context = CryptContext(schemes=['bcrypt'], deprecated='auto'); print(pwd_context.hash('admin123'))"
-INSERT INTO users (email, password_hash, role) 
-VALUES ('admin@sortex.ai', '$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW', 'admin')
+-- bcrypt hash of 'admin123'. Regenerate with: python -c "from passlib.context import CryptContext; print(CryptContext(schemes=['bcrypt'], deprecated='auto').hash('admin123'))"
+INSERT INTO users (email, password_hash, role)
+VALUES ('admin@sortex.ai', '$2b$12$E2RXvif2fug6G9jVhDevHu78b8OIAB8KXstiPqKcFEprsSdk0.oSO', 'admin')
 ON CONFLICT (email) DO NOTHING;
 
